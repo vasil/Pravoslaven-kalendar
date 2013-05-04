@@ -14,7 +14,6 @@
 # If you have module(s) with your model classes, add them here. Also
 # change the kind properties to model_class.
 python_preamble:
-- import: datetime
 - import: base64
 - import: re
 - import: google.appengine.ext.bulkload.transform
@@ -57,8 +56,10 @@ transformers:
   property_map:
     - property: __key__
       external_name: year
-      import_transform: transform.key_id_or_name_as_integer
+
+    - property: year
+      external_name: year
 
     - property: date
       external_name: date
-      import_transform: "lambda d: datetime.strptime(d, '%Y/%m/%d').date()"
+      import_transform: transform.import_date_time('%Y/%m/%d')

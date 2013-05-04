@@ -19,7 +19,7 @@ class Util(object):
                                
     auth = tweepy.OAuthHandler(config.get('twitter', 'consumer_key'), 
                                config.get('twitter', 'consumer_secret')
-    auth.set_access_token(config.get('twitter', 'access_token'), 
+    auth.set_access_token(config.get('twitter', 'access_token'),
                           config.get('twitter', 'access_token_secret')
     twitter = tweepy.API(auth)
     
@@ -33,6 +33,7 @@ class Util(object):
 
 
 class Easter(db.Model):
+    year = fb.IntegerProperty(required=True)
     date = db.DateProperty(required=True)
     
     @classmethod
