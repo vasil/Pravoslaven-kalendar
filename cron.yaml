@@ -1,0 +1,5 @@
+cron:
+  - description: twitt that day's feasts
+    url: /twitt
+    schedule: every day 17:00
+    timezone: Europe/Skopje

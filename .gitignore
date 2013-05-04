@@ -1,0 +1,7 @@
+.directory
+*swp
+*~
+staging.py
+.project
+.pydevproject
+*.pyc
