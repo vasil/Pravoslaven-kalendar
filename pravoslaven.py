@@ -1,57 +1,67 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python
 
-import codecs
+import os
 import tweepy
 import webapp2
-import logging
 import datetime
 import calendar
 import ConfigParser
 
 from google.appengine.ext import db
+from google.appengine.api import xmpp
 from google.appengine.api import memcache
+from google.appengine.ext.webapp import template
 
 class Util(object):
-    config_path = os.path.join(os.path.dirname(__file__), 
+    config_path = os.path.join(os.path.dirname(__file__),
+                               'config',
                                'pravoslaven.conf')
     config = ConfigParser.ConfigParser()
     config.read(config_path)
                                
     auth = tweepy.OAuthHandler(config.get('twitter', 'consumer_key'), 
-                               config.get('twitter', 'consumer_secret')
+                               config.get('twitter', 'consumer_secret'))
     auth.set_access_token(config.get('twitter', 'access_token'),
-                          config.get('twitter', 'access_token_secret')
+                          config.get('twitter', 'access_token_secret'))
     twitter = tweepy.API(auth)
+    
+    @classmethod
+    def today(cls):
+        today = datetime.date.today()
+        return today
+    
+    @classmethod
+    def tomorrow(cls):
+        delta = datetime.timedelta(days=1)
+        tomorrow = cls.today() + delta 
+        return tomorrow
     
     @classmethod
     def get_day_number(cls, day=datetime.date.today()):
         not_leap = not calendar.isleap(day.year)
-        start_day = datetime.date(day.year, 3, 1)
-        end_day = datetime.date(day.year, 3, 14)
-        offset = 1 if not_leap and day > start_day and day < end_day else 0
+        leap_day = datetime.date(day.year, 3, 14)
+        offset = 1 if not_leap and day > leap_day else 0
+        print offset
         return day.timetuple().tm_yday + offset
 
 
 class Easter(db.Model):
-    year = fb.IntegerProperty(required=True)
+    year = db.IntegerProperty(required=True)
     date = db.DateProperty(required=True)
-    
+     
     @classmethod
-    def new(cls, date):
-        year = date.year
-        try:
-            cls.get_date(year)
-        except:
-            easter = Easter(key_name=year, date=date)
-            return easter
-    
-    @classmethod
-    def get_date(cls, year = datetime.date.today().year):
+    def get_date(cls, year):
+        year = str(year)
         easter = memcache.get(year)
         if easter is None:
-            easter = Easter.get_by_key_name(year)
+            easter = cls.get_by_key_name(year)
             memcache.set(year, easter)
-        return easter.date
+        return easter
+    
+    def day_number(self):
+        day_number = Util.get_day_number(self.date)
+        return day_number
 
 
 class Feast(db.Model):
@@ -60,36 +70,41 @@ class Feast(db.Model):
     hagiography = db.TextProperty(required=False)
     url = db.LinkProperty(required=False)
     weight = db.RatingProperty(default=0)
-    
-    @classmethod
-    def new(cls, day_number, name, hagiography, url, weight):
-        try:
-            feast = Feast(key_name=codecs.decode(name, 'utf-8'), 
-                          day_number=day_number,
-                          name=name,
-                          hagiograpy=hagiography,
-                          url=url,
-                          weight=weight)
-            return feast
-        except IndexError:
-            logging.error('Error while inserting new feast')
-            raise Exception('%s wasn\'t found as Twitter user.' % name)
-        
+     
     @classmethod
     def get_feasts(cls, date):
-        delta = 999 - Util.get_day_number(Easter.get_date())
+        delta = 1000 - Easter.get_date(date.year).day_number()
         day_number = Util.get_day_number(date)
         variable_day_number = delta + day_number
-
         feasts = cls.all()
         feasts.filter("day_number IN", [day_number, variable_day_number])
-        feasts.order("weight")
+        feasts.order("-weight")
         return feasts
+
 
 class MainHandler(webapp2.RequestHandler):
     def get(self):
-        self.response.write('Pravoslaven Kalendar')
+        pass
+
+
+class TwitterHandler(webapp2.RequestHandler):
+    CROSSES = ['', '', '✝', '✞', '✞']
+    
+    def get(self):
+        feasts = Feast.get_feasts(Util.tomorrow())
+        template_path = os.path.join(os.path.dirname(__file__), 
+                                     "templates",
+                                     Util.config.get("templates", "twitter"))
+        for feast in feasts:
+            twitt = template.render(template_path, 
+                                    {'feast': feast, 
+                                     'cross': self.CROSSES[feast.weight]})
+             Util.twitter.update_status(twitt)
+             xmpp.send_message(Util.config.get("user", "email"), twitt)
+        feasts = ", ".join(map(lambda f: f.name, feasts))
+        self.response.write(feasts)
+
 
 app = webapp2.WSGIApplication([('/', MainHandler),
-                               ('/', None),
+                               ('/twitter', TwitterHandler),
                                ('/json', None)], debug=True)
