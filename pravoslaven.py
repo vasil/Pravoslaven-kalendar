@@ -99,8 +99,8 @@ class TwitterHandler(webapp2.RequestHandler):
             twitt = template.render(template_path, 
                                     {'feast': feast, 
                                      'cross': self.CROSSES[feast.weight]})
-             Util.twitter.update_status(twitt)
-             xmpp.send_message(Util.config.get("user", "email"), twitt)
+            Util.twitter.update_status(twitt)
+            xmpp.send_message(Util.config.get("user", "email"), twitt)
         feasts = ", ".join(map(lambda f: f.name, feasts))
         self.response.write(feasts)
 

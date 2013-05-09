@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 *.py[cod]
 
 # C extensions
@@ -36,15 +34,12 @@ nosetests.xml
 .project
 .pydevproject
 
->>>>>>> 1cd353e94d4e3ebc82657ab84445d72c9e3101a1
 .directory
 *swp
 *~
 staging.py
-<<<<<<< HEAD
 .project
 .pydevproject
 *.pyc
-=======
 
->>>>>>> 1cd353e94d4e3ebc82657ab84445d72c9e3101a1
+config/pravoslaven.conf
