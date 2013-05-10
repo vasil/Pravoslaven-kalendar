@@ -4,6 +4,7 @@
 import os
 import tweepy
 import webapp2
+import logging
 import datetime
 import calendar
 import ConfigParser
@@ -42,7 +43,6 @@ class Util(object):
         not_leap = not calendar.isleap(day.year)
         leap_day = datetime.date(day.year, 3, 14)
         offset = 1 if not_leap and day > leap_day else 0
-        print offset
         return day.timetuple().tm_yday + offset
 
 
@@ -101,8 +101,10 @@ class TwitterHandler(webapp2.RequestHandler):
                                      'cross': self.CROSSES[feast.weight]})
             Util.twitter.update_status(twitt)
             xmpp.send_message(Util.config.get("user", "email"), twitt)
-        feasts = ", ".join(map(lambda f: f.name, feasts))
-        self.response.write(feasts)
+            if feast.weight == 4:
+                break
+        logging.info(", ".join(map(lambda f: f.name, feasts)))
+        self.response.set_status(200, message="Today's Feasts Sent")
 
 
 app = webapp2.WSGIApplication([('/', MainHandler),
