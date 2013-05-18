@@ -95,16 +95,18 @@ class TwitterHandler(webapp2.RequestHandler):
         template_path = os.path.join(os.path.dirname(__file__), 
                                      "templates",
                                      Util.config.get("templates", "twitter"))
+        
+        xmmp_message = "\n" + Util.today().isoformat() + ":\n"
         for feast in feasts:
             twitt = template.render(template_path, 
                                     {'feast': feast, 
                                      'cross': self.CROSSES[feast.weight]})
             Util.twitter.update_status(twitt)
-            xmpp.send_message(Util.config.get("user", "email"), twitt)
+            xmmp_message = xmmp_message + twitt 
             if feast.weight == 4:
                 break
+        xmpp.send_message(Util.config.get("user", "email"), xmmp_message)
         logging.info(", ".join(map(lambda f: f.name, feasts)))
-        self.response.set_status(200, message="Today's Feasts Sent")
 
 
 app = webapp2.WSGIApplication([('/', MainHandler),

@@ -43,3 +43,4 @@ staging.py
 *.pyc
 
 config/pravoslaven.conf
+bulkloader-*
