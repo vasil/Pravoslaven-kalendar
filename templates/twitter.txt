@@ -1,1 +1,1 @@
-{{ cross }} {{ feast.name }} {% if feast.url %}{{ feast.url }}{% endif %}
+{{cross}} {{feast.name}}{% if feast.url %} — {{url}}{% endif %}

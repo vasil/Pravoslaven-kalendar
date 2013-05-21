@@ -2,6 +2,7 @@
 #!/usr/bin/env python
 
 import os
+import json
 import tweepy
 import webapp2
 import logging
@@ -12,6 +13,7 @@ import ConfigParser
 from google.appengine.ext import db
 from google.appengine.api import xmpp
 from google.appengine.api import memcache
+from google.appengine.api import urlfetch
 from google.appengine.ext.webapp import template
 
 class Util(object):
@@ -25,6 +27,9 @@ class Util(object):
                                config.get('twitter', 'consumer_secret'))
     auth.set_access_token(config.get('twitter', 'access_token'),
                           config.get('twitter', 'access_token_secret'))
+    google_shortener_url = "%s%s" % (config.get('google', 'shortener_base'),
+                                      config.get('google', 'api_key'))
+    
     twitter = tweepy.API(auth)
     
     @classmethod
@@ -44,6 +49,21 @@ class Util(object):
         leap_day = datetime.date(day.year, 3, 14)
         offset = 1 if not_leap and day > leap_day else 0
         return day.timetuple().tm_yday + offset
+
+    @classmethod
+    def shorten_url(cls, url):
+        try:
+            values = json.dumps({'longUrl' : url})
+            headers = {'Content-Type' : 'application/json'}
+            result = urlfetch.fetch(Util.google_shortener_url, 
+                                    payload=values, 
+                                    method='POST', 
+                                    headers=headers)
+            output = json.loads(result.content)
+            return output["id"]
+        except Exception, e:
+            logging.error(e)
+            return None
 
 
 class Easter(db.Model):
@@ -88,7 +108,7 @@ class MainHandler(webapp2.RequestHandler):
 
 
 class TwitterHandler(webapp2.RequestHandler):
-    CROSSES = ['', '', '✝', '✞', '✞']
+    CROSSES = ['•', '•', '✝', '✞', '✞']
     
     def get(self):
         feasts = Feast.get_feasts(Util.tomorrow())
@@ -99,14 +119,16 @@ class TwitterHandler(webapp2.RequestHandler):
         xmmp_msg = "\n" + Util.tomorrow().isoformat() + ":\n"
         for feast in feasts:
             twitt = template.render(template_path, 
-                                    {'feast': feast, 
+                                    {'feast': feast,
+                                     'url': Util.shorten_url(feast.url), 
                                      'cross': self.CROSSES[feast.weight]})
             Util.twitter.update_status(twitt)
-            xmmp_msg = ("• " if feast.weight < 2 else "") + xmmp_msg + twitt 
+            xmmp_msg = xmmp_msg + twitt 
             if feast.weight == 4:
                 break
         xmpp.send_message(Util.config.get("user", "email"), xmmp_msg)
         logging.info(", ".join(map(lambda f: f.name, feasts)))
+        self.response.write(xmmp_msg)
 
 
 app = webapp2.WSGIApplication([('/', MainHandler),
