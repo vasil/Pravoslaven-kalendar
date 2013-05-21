@@ -108,7 +108,7 @@ class MainHandler(webapp2.RequestHandler):
 
 
 class TwitterHandler(webapp2.RequestHandler):
-    CROSSES = ['•', '•', '✝', '✞', '✞']
+    CROSSES = ['⁕', '⁕', '✟', '✞', '✞']
     
     def get(self):
         feasts = Feast.get_feasts(Util.tomorrow())
