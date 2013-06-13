@@ -5,17 +5,11 @@
 """
 Tweepy Twitter API library
 """
-
-import os
-import sys
-
-__version__ = '1.7.1'
+__version__ = '2.0'
 __author__ = 'Joshua Roesslein'
 __license__ = 'MIT'
 
-sys.path.append(os.path.abspath(os.path.dirname(os.path.realpath(__file__))))
-
-from tweepy.models import Status, User, DirectMessage, Friendship, SavedSearch, SearchResult, ModelFactory
+from tweepy.models import Status, User, DirectMessage, Friendship, SavedSearch, SearchResults, ModelFactory, Category
 from tweepy.error import TweepError
 from tweepy.api import API
 from tweepy.cache import Cache, MemoryCache, FileCache

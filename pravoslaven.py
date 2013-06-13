@@ -15,6 +15,8 @@ from google.appengine.api import xmpp
 from google.appengine.api import memcache
 from google.appengine.api import urlfetch
 from google.appengine.ext.webapp import template
+from google.appengine.ext.webapp.mail_handlers import InboundMailHandler
+
 
 class Util(object):
     config_path = os.path.join(os.path.dirname(__file__),
@@ -126,11 +128,19 @@ class TwitterHandler(webapp2.RequestHandler):
             xmmp_msg = xmmp_msg + twitt 
             if feast.weight == 4:
                 break
-        xmpp.send_message(Util.config.get("user", "email"), xmmp_msg)
+        xmpp.send_message(Util.config.get("admin", "email"), xmmp_msg)
         logging.info(", ".join(map(lambda f: f.name, feasts)))
         self.response.write(xmmp_msg)
 
 
+class LogSenderHandler(InboundMailHandler):
+    def receive(self, message):
+        plaintext_bodies = message.bodies('text/plain')
+        for _, body in plaintext_bodies:
+            xmpp.send_message(Util.config.get("admin", "email"), body.decode())
+
+
 app = webapp2.WSGIApplication([('/', MainHandler),
                                ('/twitter', TwitterHandler),
-                               ('/json', None)], debug=True)
+                               ('/json', None), 
+                               LogSenderHandler.mapping()], debug=True)

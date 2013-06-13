@@ -16,9 +16,16 @@ handlers:
 - url: .*
   script: pravoslaven.app
 
+- url: /_ah/mail/.+
+  script: pravoslaven.app
+  login: admin
+
 libraries:
 - name: webapp2
   version: "2.5.2"
 
 builtins:
 - remote_api: on
+
+inbound_services:
+- mail
